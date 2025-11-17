@@ -57,7 +57,7 @@ const ImageUpload = ({ onImageAnalyzed, isAnalyzing }: ImageUploadProps) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto animate-scale-in">
       <div
         onDrop={handleDrop}
         onDragOver={(e) => {
@@ -66,11 +66,11 @@ const ImageUpload = ({ onImageAnalyzed, isAnalyzing }: ImageUploadProps) => {
         }}
         onDragLeave={() => setIsDragging(false)}
         className={`
-          relative border-2 border-dashed rounded-2xl p-12
-          transition-all duration-300 cursor-pointer
+          relative glass-card rounded-3xl p-16
+          transition-all duration-500 cursor-pointer
           ${isDragging 
-            ? 'border-primary bg-primary/5 scale-105' 
-            : 'border-primary/30 hover:border-primary/60 hover:bg-muted/30'
+            ? 'border-primary border-2 bg-primary/10 scale-105 shadow-2xl' 
+            : 'hover:border-primary/60 hover:scale-[1.02] hover:shadow-xl'
           }
           ${isAnalyzing ? 'pointer-events-none opacity-60' : ''}
         `}
@@ -86,47 +86,84 @@ const ImageUpload = ({ onImageAnalyzed, isAnalyzing }: ImageUploadProps) => {
         />
 
         {preview && !isAnalyzing ? (
-          <div className="space-y-4">
-            <img 
-              src={preview} 
-              alt="Preview" 
-              className="max-h-64 mx-auto rounded-lg shadow-lg"
-            />
-            <p className="text-center text-sm text-muted-foreground">
-              Click to upload a different image
+          <div className="space-y-6 animate-fade-in">
+            <div className="relative">
+              <img 
+                src={preview} 
+                alt="Preview" 
+                className="max-h-80 mx-auto rounded-2xl shadow-2xl ring-2 ring-primary/20"
+              />
+              <div className="absolute -top-2 -right-2 w-12 h-12 bg-success rounded-full flex items-center justify-center shadow-lg animate-scale-in">
+                <span className="text-2xl">✓</span>
+              </div>
+            </div>
+            <p className="text-center text-base text-muted-foreground font-medium">
+              Perfect! Click to upload a different image
             </p>
           </div>
         ) : (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6">
             {isAnalyzing ? (
               <>
-                <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin" />
-                <p className="text-lg font-medium text-foreground">
-                  Analyzing your ingredients...
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  This may take a few seconds
-                </p>
+                <div className="relative">
+                  <Loader2 className="w-20 h-20 mx-auto text-primary animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-primary/20 rounded-full animate-ping" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold text-foreground">
+                    Analyzing your ingredients...
+                  </p>
+                  <p className="text-base text-muted-foreground">
+                    Our AI is identifying everything in your photo
+                  </p>
+                </div>
+                <div className="flex justify-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                </div>
               </>
             ) : (
               <>
-                <div className="flex justify-center gap-4">
-                  <Upload className="w-12 h-12 text-primary" />
-                  <Camera className="w-12 h-12 text-secondary" />
+                <div className="relative">
+                  <div className="flex justify-center gap-8 mb-2">
+                    <div className="relative">
+                      <Upload className="w-16 h-16 text-primary animate-float" />
+                      <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-success rounded-full flex items-center justify-center text-xs">
+                        1
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <Camera className="w-16 h-16 text-secondary animate-float" style={{ animationDelay: '1s' }} />
+                      <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-success rounded-full flex items-center justify-center text-xs">
+                        2
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xl font-semibold text-foreground">
-                    Upload a photo of your ingredients
+                <div className="space-y-3">
+                  <p className="text-3xl font-bold text-foreground">
+                    Upload Your Ingredients
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Drag & drop or click to select • Take a photo on mobile
+                  <p className="text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Snap a photo of your fridge, pantry, or countertop • Drag & drop • or click below
                   </p>
                 </div>
-                <div className="flex justify-center gap-2 pt-4">
-                  <Button variant="default" size="lg" className="bg-accent hover:bg-accent/90">
-                    Choose File
+                <div className="flex justify-center gap-3 pt-4">
+                  <Button 
+                    variant="default" 
+                    size="lg" 
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                  >
+                    <Upload className="w-5 h-5 mr-2" />
+                    Choose Photo
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground/70">
+                  Works with JPG, PNG, HEIC • Max 20MB
+                </p>
               </>
             )}
           </div>

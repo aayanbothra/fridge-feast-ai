@@ -3,6 +3,7 @@ import ImageUpload from '@/components/ImageUpload';
 import IngredientList from '@/components/IngredientList';
 import RecipeCard from '@/components/RecipeCard';
 import SubstitutionPanel from '@/components/SubstitutionPanel';
+import HeroSection from '@/components/HeroSection';
 import { Ingredient, Recipe, Substitution } from '@/types/recipe';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -111,40 +112,38 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Recipe Remix" className="w-12 h-12" />
-            <h1 className="text-2xl font-display font-semibold text-foreground">
-              Recipe Remix
-            </h1>
+      <header className="glass-card border-b sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 group">
+              <img 
+                src={logo} 
+                alt="Recipe Remix" 
+                className="w-14 h-14 transition-transform group-hover:scale-110" 
+              />
+              <h1 className="text-2xl font-display font-semibold text-foreground">
+                Recipe Remix
+              </h1>
+            </div>
+            {state !== 'upload' && (
+              <Button 
+                variant="outline" 
+                onClick={handleReset}
+                className="hover:bg-primary hover:text-primary-foreground transition-all"
+              >
+                Start Over
+              </Button>
+            )}
           </div>
-          {state !== 'upload' && (
-            <Button variant="outline" onClick={handleReset}>
-              Start Over
-            </Button>
-          )}
         </div>
       </header>
 
       {/* Hero Section */}
-      {state === 'upload' && (
-        <section className="container mx-auto px-4 py-12 text-center">
-          <div className="max-w-3xl mx-auto mb-12">
-            <h2 className="text-5xl font-display font-semibold mb-4 text-foreground">
-              Turn Your Ingredients Into
-              <span className="text-primary"> Delicious Recipes</span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Snap a photo, get AI-powered recipe suggestions, and discover creative ingredient substitutions backed by flavor science.
-            </p>
-          </div>
-        </section>
-      )}
+      {state === 'upload' && <HeroSection />}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 pb-20">
-        <div className="space-y-8">
+      <main className="container mx-auto px-4 py-12 pb-24">
+        <div className="space-y-12">
           {state === 'upload' && (
             <ImageUpload
               onImageAnalyzed={handleImageAnalyzed}
@@ -158,13 +157,13 @@ const Index = () => {
                 ingredients={ingredients}
                 onRemove={handleRemoveIngredient}
               />
-              <div className="flex justify-center">
+              <div className="flex justify-center animate-slide-up">
                 <Button
                   onClick={handleFindRecipes}
                   size="lg"
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-xl px-12 py-7 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 font-semibold"
                 >
-                  Find Recipes
+                  Find My Perfect Recipes
                 </Button>
               </div>
             </>
@@ -173,18 +172,31 @@ const Index = () => {
           {state === 'recipes' && (
             <>
               {isLoadingRecipes ? (
-                <div className="text-center py-12">
-                  <Loader2 className="w-12 h-12 mx-auto text-primary animate-spin mb-4" />
-                  <p className="text-lg font-medium text-foreground">
+                <div className="text-center py-20">
+                  <div className="relative inline-block">
+                    <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin mb-6" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-primary/20 rounded-full animate-ping" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground mb-2">
                     Finding perfect recipes for you...
+                  </p>
+                  <p className="text-base text-muted-foreground">
+                    Analyzing your ingredients with AI
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <h2 className="text-3xl font-bold text-center text-foreground mb-8">
-                    Suggested Recipes
-                  </h2>
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-10 animate-fade-in">
+                  <div className="text-center">
+                    <h2 className="text-5xl font-display font-bold gradient-text mb-4">
+                      Your Perfect Matches
+                    </h2>
+                    <p className="text-lg text-muted-foreground">
+                      We found {recipes.length} delicious recipes you can make
+                    </p>
+                  </div>
+                  <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {recipes.map((recipe, index) => (
                       <RecipeCard
                         key={index}
@@ -201,10 +213,18 @@ const Index = () => {
           {state === 'substitutions' && (
             <>
               {isLoadingSubstitutions ? (
-                <div className="text-center py-12">
-                  <Loader2 className="w-12 h-12 mx-auto text-primary animate-spin mb-4" />
-                  <p className="text-lg font-medium text-foreground">
+                <div className="text-center py-20">
+                  <div className="relative inline-block">
+                    <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin mb-6" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-secondary/20 rounded-full animate-ping" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground mb-2">
                     Analyzing substitutions with flavor science...
+                  </p>
+                  <p className="text-base text-muted-foreground">
+                    Finding creative alternatives backed by chemistry
                   </p>
                 </div>
               ) : (
@@ -220,9 +240,24 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-20 py-8 bg-card/30">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Powered by AI • Built with flavor science</p>
+      <footer className="border-t border-border/50 mt-24 py-12 bg-gradient-to-t from-muted/20 to-transparent">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Recipe Remix" className="w-10 h-10 opacity-80" />
+              <span className="font-display font-semibold text-lg text-foreground">
+                Recipe Remix
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Powered by AI • Built with flavor science • Made with love for home cooks
+            </p>
+            <div className="flex gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <div className="w-2 h-2 rounded-full bg-secondary" />
+              <div className="w-2 h-2 rounded-full bg-accent" />
+            </div>
+          </div>
         </div>
       </footer>
     </div>
