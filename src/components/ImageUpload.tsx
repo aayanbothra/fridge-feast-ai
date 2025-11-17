@@ -2,13 +2,16 @@ import { useState, useRef } from 'react';
 import { Upload, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { analyzeImage } from '@/services/claude';
+import { Ingredient } from '@/types/recipe';
 
 interface ImageUploadProps {
-  onImageAnalyzed: (ingredients: any[]) => void;
+  onImageAnalyzed: (ingredients: Ingredient[]) => void;
   isAnalyzing: boolean;
+  setIsAnalyzing: (analyzing: boolean) => void;
 }
 
-const ImageUpload = ({ onImageAnalyzed, isAnalyzing }: ImageUploadProps) => {
+const ImageUpload = ({ onImageAnalyzed, isAnalyzing, setIsAnalyzing }: ImageUploadProps) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,23 +28,30 @@ const ImageUpload = ({ onImageAnalyzed, isAnalyzing }: ImageUploadProps) => {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+    reader.onload = async (e) => {
+      const base64Image = e.target?.result as string;
+      setPreview(base64Image);
+      
+      // Analyze image with Claude
+      setIsAnalyzing(true);
+      try {
+        const ingredients = await analyzeImage(base64Image);
+        onImageAnalyzed(ingredients);
+        toast({
+          title: "Success!",
+          description: `Found ${ingredients.length} ingredients in your image`,
+        });
+      } catch (error) {
+        console.error('Error analyzing image:', error);
+        toast({
+          title: "Analysis failed",
+          description: "Could not analyze the image. Please try again.",
+          variant: "destructive",
+        });
+        setIsAnalyzing(false);
+      }
     };
     reader.readAsDataURL(file);
-
-    // TODO: Call Claude API to analyze image
-    // For now, simulate analysis
-    setTimeout(() => {
-      const mockIngredients = [
-        { name: 'tomatoes', category: 'produce', quantity: '3' },
-        { name: 'onion', category: 'produce', quantity: '1' },
-        { name: 'garlic', category: 'produce', quantity: '4 cloves' },
-        { name: 'chicken breast', category: 'protein', quantity: '2' },
-        { name: 'olive oil', category: 'spice', quantity: '2 tbsp' },
-      ];
-      onImageAnalyzed(mockIngredients);
-    }, 2000);
   };
 
   const handleDrop = (e: React.DragEvent) => {

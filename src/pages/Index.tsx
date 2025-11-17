@@ -12,6 +12,8 @@ import SampleCTA from '@/components/SampleCTA';
 import { Ingredient, Recipe, Substitution } from '@/types/recipe';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { generateRecipes, generateSubstitutions } from '@/services/claude';
 import logo from '@/assets/logo.png';
 
 type AppState = 'upload' | 'ingredients' | 'recipes' | 'substitutions';
@@ -25,6 +27,7 @@ const Index = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const { toast } = useToast();
 
   const handleImageAnalyzed = (detectedIngredients: Ingredient[]) => {
     setIngredients(detectedIngredients);
@@ -45,41 +48,24 @@ const Index = () => {
     setIsLoadingRecipes(true);
     setState('recipes');
     
-    // TODO: Call Claude API to get recipes
-    // For now, use mock data
-    setTimeout(() => {
-      const mockRecipes: Recipe[] = [
-        {
-          title: 'Mediterranean Chicken Bowl',
-          cookTime: 25,
-          difficulty: 'easy',
-          ingredientsNeeded: ['chicken breast', 'tomatoes', 'onion', 'garlic', 'olive oil', 'lemon', 'oregano'],
-          ingredientsMatched: ['chicken breast', 'tomatoes', 'onion', 'garlic', 'olive oil'],
-          matchPercentage: 71,
-          description: 'A fresh and flavorful bowl featuring juicy chicken with Mediterranean spices, roasted tomatoes, and aromatic herbs. Perfect for a quick weeknight dinner.',
-        },
-        {
-          title: 'Simple Chicken Stir-Fry',
-          cookTime: 20,
-          difficulty: 'easy',
-          ingredientsNeeded: ['chicken breast', 'onion', 'garlic', 'olive oil', 'soy sauce'],
-          ingredientsMatched: ['chicken breast', 'onion', 'garlic', 'olive oil'],
-          matchPercentage: 80,
-          description: 'Quick and easy stir-fry with tender chicken and caramelized onions. A versatile base that works with whatever vegetables you have on hand.',
-        },
-        {
-          title: 'Rustic Tomato Chicken',
-          cookTime: 35,
-          difficulty: 'medium',
-          ingredientsNeeded: ['chicken breast', 'tomatoes', 'onion', 'garlic', 'olive oil', 'basil', 'white wine'],
-          ingredientsMatched: ['chicken breast', 'tomatoes', 'onion', 'garlic', 'olive oil'],
-          matchPercentage: 71,
-          description: 'A comforting one-pan dish with chicken simmered in rich tomato sauce. The garlic and onions create a deeply savory foundation.',
-        },
-      ];
-      setRecipes(mockRecipes);
+    try {
+      const generatedRecipes = await generateRecipes(ingredients);
+      setRecipes(generatedRecipes);
+      toast({
+        title: "Recipes ready!",
+        description: `Found ${generatedRecipes.length} delicious recipes for you`,
+      });
+    } catch (error) {
+      console.error('Error generating recipes:', error);
+      toast({
+        title: "Failed to generate recipes",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      setState('ingredients');
+    } finally {
       setIsLoadingRecipes(false);
-    }, 1500);
+    }
   };
 
   const handleSelectRecipe = async (recipe: Recipe) => {
@@ -87,28 +73,31 @@ const Index = () => {
     setIsLoadingSubstitutions(true);
     setState('substitutions');
 
-    // TODO: Call Claude API to get substitutions
-    // For now, use mock data
-    setTimeout(() => {
-      const mockSubstitutions: Substitution[] = [
-        {
-          original: 'lemon',
-          substitute: 'tomatoes (extra)',
-          flavorScience: "Tomatoes contain citric acid and glutamic acid, providing the brightness you'd get from lemon. While less tart, their umami depth adds complexity. The acidity helps tenderize the chicken similarly to lemon juice.",
-          flavorImpact: 4,
-          textureImpact: 2,
-        },
-        {
-          original: 'oregano',
-          substitute: 'garlic (roasted)',
-          flavorScience: 'Roasting garlic until golden creates Maillard compounds that mimic oregano\'s earthy, slightly bitter notes. Both share sulfur compounds that add depth to Mediterranean dishes.',
-          flavorImpact: 3,
-          textureImpact: 1,
-        },
-      ];
-      setSubstitutions(mockSubstitutions);
+    try {
+      const generatedSubstitutions = await generateSubstitutions(recipe, ingredients);
+      setSubstitutions(generatedSubstitutions);
+      if (generatedSubstitutions.length > 0) {
+        toast({
+          title: "Substitutions found!",
+          description: `${generatedSubstitutions.length} smart substitutions ready`,
+        });
+      } else {
+        toast({
+          title: "Perfect match!",
+          description: "You have all the ingredients needed",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating substitutions:', error);
+      toast({
+        title: "Failed to generate substitutions",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      setState('recipes');
+    } finally {
       setIsLoadingSubstitutions(false);
-    }, 1500);
+    }
   };
 
   const handleReset = () => {
@@ -172,6 +161,7 @@ const Index = () => {
               <ImageUpload
                 onImageAnalyzed={handleImageAnalyzed}
                 isAnalyzing={isAnalyzing}
+                setIsAnalyzing={setIsAnalyzing}
               />
             </section>
           </>
