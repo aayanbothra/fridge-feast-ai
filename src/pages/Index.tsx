@@ -4,6 +4,11 @@ import IngredientList from '@/components/IngredientList';
 import RecipeCard from '@/components/RecipeCard';
 import SubstitutionPanel from '@/components/SubstitutionPanel';
 import HeroSection from '@/components/HeroSection';
+import HowItWorks from '@/components/HowItWorks';
+import FeatureHighlights from '@/components/FeatureHighlights';
+import ExampleRecipes from '@/components/ExampleRecipes';
+import SubstitutionShowcase from '@/components/SubstitutionShowcase';
+import SampleCTA from '@/components/SampleCTA';
 import { Ingredient, Recipe, Substitution } from '@/types/recipe';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -25,6 +30,11 @@ const Index = () => {
     setIngredients(detectedIngredients);
     setState('ingredients');
     setIsAnalyzing(false);
+  };
+
+  const handleLoadSample = (sampleIngredients: Ingredient[]) => {
+    setIngredients(sampleIngredients);
+    setState('ingredients');
   };
 
   const handleRemoveIngredient = (index: number) => {
@@ -110,30 +120,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background decorative-bg">
       {/* Header */}
       <header className="glass-card border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 group">
-              <img 
-                src={logo} 
-                alt="Recipe Remix" 
-                className="w-14 h-14 transition-transform group-hover:scale-110" 
-              />
-              <h1 className="text-2xl font-display font-semibold text-foreground">
-                Recipe Remix
-              </h1>
-            </div>
-            {state !== 'upload' && (
-              <Button 
-                variant="outline" 
-                onClick={handleReset}
-                className="hover:bg-primary hover:text-primary-foreground transition-all"
-              >
-                Start Over
-              </Button>
-            )}
+          <div className="flex items-center justify-center gap-3 group">
+            <img 
+              src={logo} 
+              alt="Recipe Remix" 
+              className="w-14 h-14 transition-transform group-hover:scale-110" 
+            />
+            <h1 className="text-2xl font-display font-semibold text-foreground">
+              Recipe Remix
+            </h1>
           </div>
         </div>
       </header>
@@ -143,14 +142,54 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 pb-24">
-        <div className="space-y-12">
-          {state === 'upload' && (
-            <ImageUpload
-              onImageAnalyzed={handleImageAnalyzed}
-              isAnalyzing={isAnalyzing}
-            />
-          )}
+        {state === 'upload' && (
+          <>
+            {/* How It Works */}
+            <HowItWorks />
 
+            {/* Feature Highlights */}
+            <FeatureHighlights />
+
+            {/* Example Recipes */}
+            <ExampleRecipes />
+
+            {/* Substitution Showcase */}
+            <SubstitutionShowcase />
+
+            {/* Upload Section with Sample CTA */}
+            <section className="py-20">
+              <div className="text-center mb-12">
+                <h2 className="text-5xl font-display font-semibold text-foreground mb-4">
+                  Ready to Get Started?
+                </h2>
+                <p className="text-xl text-muted-foreground">
+                  Upload a photo and discover your perfect recipes
+                </p>
+              </div>
+              
+              <SampleCTA onLoadSample={handleLoadSample} />
+              
+              <ImageUpload
+                onImageAnalyzed={handleImageAnalyzed}
+                isAnalyzing={isAnalyzing}
+              />
+            </section>
+          </>
+        )}
+
+        {state !== 'upload' && (
+          <div className="flex justify-end mb-6">
+            <Button 
+              variant="outline" 
+              onClick={handleReset}
+              className="hover:bg-primary hover:text-primary-foreground transition-all"
+            >
+              Start Over
+            </Button>
+          </div>
+        )}
+
+        <div className="space-y-12">
           {state === 'ingredients' && (
             <>
               <IngredientList
