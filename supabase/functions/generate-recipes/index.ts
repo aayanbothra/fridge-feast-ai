@@ -73,13 +73,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: 3500,
         messages: [
           {
             role: 'user',
             content: `I have these ingredients: ${ingredientList}
 
-Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions. Return a JSON array with this exact structure:
+Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions (9 total). Return ONLY valid JSON array with this EXACT structure:
 [
   {
     "name": "Mediterranean",
@@ -106,18 +106,17 @@ Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions. Return a JS
   }
 ]
 
-Requirements:
-- Choose 3 distinct, diverse cuisines (e.g., Mediterranean, Asian, Mexican, Italian, Indian, American)
-- Each cuisine should have exactly 3 recipes
-- Each recipe should have 5-8 clear cooking steps
-- ingredientsMatched: only ingredients from my list that are used
-- matchPercentage: (ingredientsMatched.length / ingredientsNeeded.length) * 100
-- Prioritize recipes with high match percentages (60%+)
-- Vary difficulty and cook times across recipes
-- Make descriptions appetizing and specific
-- cuisine field should match the cuisine group name
+CRITICAL Requirements:
+- Choose 3 distinct cuisines (Mediterranean, Asian, Mexican or similar)
+- Each cuisine must have EXACTLY 3 recipes
+- Each recipe must have EXACTLY 4-6 cooking steps
+- Keep descriptions under 100 characters
+- ingredientsMatched: only ingredients from my list
+- matchPercentage: round to nearest integer
+- Ensure all JSON is VALID - use double quotes, escape special chars
+- cuisine field must match cuisine group name exactly
 
-Return ONLY the JSON array of cuisine groups, no other text.`,
+Return ONLY the JSON array. NO markdown, NO explanations, ONLY the JSON array starting with [ and ending with ].`,
           },
         ],
       }),
