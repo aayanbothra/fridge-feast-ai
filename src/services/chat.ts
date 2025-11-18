@@ -30,7 +30,7 @@ export async function streamChatMessage({
       throw error;
     }
 
-    // For non-streaming response
+    // Handle Claude API response format
     if (data) {
       const response = data as any;
       if (response.error) {
@@ -38,27 +38,15 @@ export async function streamChatMessage({
         return;
       }
       
-      // Handle the response
-      if (response.choices && response.choices[0]) {
-        const choice = response.choices[0];
-        const content = choice.message?.content || '';
-        const toolCalls = choice.message?.tool_calls;
-        
-        onDelta(content);
-        
-        let recipeUpdate = undefined;
-        if (toolCalls && toolCalls.length > 0) {
-          const updateTool = toolCalls.find((tc: any) => tc.function.name === 'update_recipe');
-          if (updateTool) {
-            recipeUpdate = JSON.parse(updateTool.function.arguments);
-          }
-        }
-        
-        onDone(recipeUpdate);
-      }
+      // Claude returns simple JSON with message and recipeUpdate
+      const messageContent = response.message || '';
+      const recipeUpdate = response.recipeUpdate || undefined;
+      
+      onDelta(messageContent);
+      onDone(recipeUpdate);
     }
   } catch (error: any) {
-    console.error('Chat streaming error:', error);
+    console.error('Chat error:', error);
     onError(error.message || 'Failed to get AI response');
   }
 }

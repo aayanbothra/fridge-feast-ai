@@ -1,4 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,9 +27,9 @@ serve(async (req) => {
       throw new Error('Invalid or missing messages array');
     }
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
     // Build safe ingredient lists
@@ -53,89 +54,115 @@ Your role:
 - Help users when they're missing ingredients by suggesting substitutions
 - Adapt recipes for dietary restrictions, portion sizes, time constraints, or skill levels
 - Provide clear, concise cooking advice
-- When suggesting recipe changes, be specific about what to modify
+- When suggesting recipe changes, use the update_recipe tool to make modifications
 
 Keep responses conversational and helpful. Focus on practical cooking solutions.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling Claude API for recipe chat...');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: messages,
         tools: [{
-          type: 'function',
-          function: {
-            name: 'update_recipe',
-            description: 'Update the recipe with modifications based on user requests',
-            parameters: {
-              type: 'object',
-              properties: {
-                ingredientsNeeded: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Updated list of ingredients needed'
-                },
-                steps: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      stepNumber: { type: 'number' },
-                      instruction: { type: 'string' },
-                      estimatedTime: { type: 'string' }
+          name: 'update_recipe',
+          description: 'Update the recipe with modifications based on user requests. Use this when the user asks to change ingredients, adjust cooking time, modify steps, or make any recipe modifications.',
+          input_schema: {
+            type: 'object',
+            properties: {
+              ingredientsNeeded: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Updated list of all ingredients needed for the recipe'
+              },
+              steps: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    stepNumber: { 
+                      type: 'number',
+                      description: 'The step number (1, 2, 3, etc.)'
+                    },
+                    instruction: { 
+                      type: 'string',
+                      description: 'Clear instruction for this step'
+                    },
+                    estimatedTime: { 
+                      type: 'string',
+                      description: 'Estimated time for this step (e.g., "5 min", "10-15 min")'
                     }
                   },
-                  description: 'Updated cooking steps'
+                  required: ['stepNumber', 'instruction']
                 },
-                cookTime: {
-                  type: 'number',
-                  description: 'Updated total cook time in minutes'
-                },
-                description: {
-                  type: 'string',
-                  description: 'Updated recipe description'
-                },
-                explanation: {
-                  type: 'string',
-                  description: 'Explanation of why these changes work'
-                }
+                description: 'Updated cooking steps with step numbers and instructions'
               },
-              required: ['explanation']
-            }
+              cookTime: {
+                type: 'number',
+                description: 'Updated total cook time in minutes'
+              },
+              description: {
+                type: 'string',
+                description: 'Updated recipe description'
+              },
+              explanation: {
+                type: 'string',
+                description: 'Explanation of why these changes work and what was modified'
+              }
+            },
+            required: ['explanation']
           }
         }],
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits required. Please add credits to your workspace.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      throw new Error('AI gateway error');
+      const error = await response.text();
+      console.error('Claude API error:', response.status, error);
+      return new Response(
+        JSON.stringify({ error: `Claude API error: ${error}` }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
-    });
+    const data = await response.json();
+    console.log('Claude response received');
+
+    // Extract message content and tool use
+    let messageContent = '';
+    let recipeUpdate = null;
+
+    for (const block of data.content) {
+      if (block.type === 'text') {
+        messageContent += block.text;
+      } else if (block.type === 'tool_use' && block.name === 'update_recipe') {
+        recipeUpdate = block.input;
+      }
+    }
+
+    // Return response in format expected by client
+    return new Response(
+      JSON.stringify({
+        message: messageContent,
+        recipeUpdate: recipeUpdate,
+        usage: data.usage
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+
   } catch (error) {
     console.error('Recipe chat error:', error);
     console.error('Request context:', JSON.stringify({ 
