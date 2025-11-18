@@ -161,11 +161,8 @@ const Index = () => {
               <img 
                 src={logo} 
                 alt="Recipe Remix" 
-                className="w-14 h-14 transition-transform group-hover:scale-110" 
+                className="h-14 w-auto transition-transform group-hover:scale-110" 
               />
-              <h1 className="text-2xl font-display font-semibold text-foreground">
-                Recipe Remix
-              </h1>
             </div>
             
             {state !== 'saved-recipes' && (
@@ -390,10 +387,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-3">
-              <img src={logo} alt="Recipe Remix" className="w-10 h-10 opacity-80" />
-              <span className="font-display font-semibold text-lg text-foreground">
-                Recipe Remix
-              </span>
+              <img src={logo} alt="Recipe Remix" className="h-10 w-auto opacity-80" />
             </div>
             <p className="text-sm text-muted-foreground">
               Powered by AI • Built with flavor science • Made with love for home cooks
