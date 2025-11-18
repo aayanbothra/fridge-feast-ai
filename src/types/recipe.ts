@@ -4,6 +4,12 @@ export interface Ingredient {
   quantity?: string;
 }
 
+export interface CookingStep {
+  stepNumber: number;
+  instruction: string;
+  estimatedTime?: string;
+}
+
 export interface Recipe {
   title: string;
   cookTime: number;
@@ -12,6 +18,7 @@ export interface Recipe {
   ingredientsMatched: string[];
   matchPercentage: number;
   description: string;
+  steps: CookingStep[];
 }
 
 export interface Substitution {

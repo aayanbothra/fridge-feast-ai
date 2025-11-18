@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import IngredientList from '@/components/IngredientList';
 import RecipeCard from '@/components/RecipeCard';
+import CookingInstructions from '@/components/CookingInstructions';
 import SubstitutionPanel from '@/components/SubstitutionPanel';
 import HeroSection from '@/components/HeroSection';
 import HowItWorks from '@/components/HowItWorks';
@@ -16,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateRecipes, generateSubstitutions } from '@/services/claude';
 import logo from '@/assets/logo.png';
 
-type AppState = 'upload' | 'ingredients' | 'recipes' | 'substitutions';
+type AppState = 'upload' | 'ingredients' | 'recipes' | 'cooking-instructions' | 'substitutions';
 
 const Index = () => {
   const [state, setState] = useState<AppState>('upload');
@@ -68,13 +69,19 @@ const Index = () => {
     }
   };
 
-  const handleSelectRecipe = async (recipe: Recipe) => {
+  const handleSelectRecipe = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
+    setState('cooking-instructions');
+  };
+
+  const handleStartSubstitutions = async () => {
+    if (!selectedRecipe) return;
+
     setIsLoadingSubstitutions(true);
     setState('substitutions');
 
     try {
-      const generatedSubstitutions = await generateSubstitutions(recipe, ingredients);
+      const generatedSubstitutions = await generateSubstitutions(selectedRecipe, ingredients);
       setSubstitutions(generatedSubstitutions);
       if (generatedSubstitutions.length > 0) {
         toast({
@@ -94,7 +101,7 @@ const Index = () => {
         description: "Please try again.",
         variant: "destructive",
       });
-      setState('recipes');
+      setState('cooking-instructions');
     } finally {
       setIsLoadingSubstitutions(false);
     }
@@ -239,6 +246,16 @@ const Index = () => {
             </>
           )}
 
+          {state === 'cooking-instructions' && selectedRecipe && (
+            <CookingInstructions
+              recipeName={selectedRecipe.title}
+              steps={selectedRecipe.steps}
+              totalTime={selectedRecipe.cookTime}
+              onBack={() => setState('recipes')}
+              onSeeSubstitutions={handleStartSubstitutions}
+            />
+          )}
+
           {state === 'substitutions' && (
             <>
               {isLoadingSubstitutions ? (
@@ -260,7 +277,7 @@ const Index = () => {
                 <SubstitutionPanel
                   recipeName={selectedRecipe?.title || ''}
                   substitutions={substitutions}
-                  onBack={() => setState('recipes')}
+                  onBack={() => setState('cooking-instructions')}
                 />
               )}
             </>

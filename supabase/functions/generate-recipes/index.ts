@@ -12,6 +12,12 @@ interface Ingredient {
   quantity?: string;
 }
 
+interface CookingStep {
+  stepNumber: number;
+  instruction: string;
+  estimatedTime?: string;
+}
+
 interface Recipe {
   title: string;
   cookTime: number;
@@ -20,6 +26,7 @@ interface Recipe {
   ingredientsMatched: string[];
   matchPercentage: number;
   description: string;
+  steps: CookingStep[];
 }
 
 serve(async (req) => {
@@ -59,7 +66,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2048,
+        max_tokens: 3072,
         messages: [
           {
             role: 'user',
@@ -74,7 +81,14 @@ Generate 3 creative recipe suggestions I can make. Return a JSON array with this
     "ingredientsNeeded": ["ingredient1", "ingredient2", ...],
     "ingredientsMatched": ["ingredient1", "ingredient2", ...],
     "matchPercentage": 75,
-    "description": "A compelling 2-3 sentence description highlighting flavors and appeal"
+    "description": "A compelling 2-3 sentence description highlighting flavors and appeal",
+    "steps": [
+      {
+        "stepNumber": 1,
+        "instruction": "Clear, actionable instruction for this step",
+        "estimatedTime": "5 min"
+      }
+    ]
   }
 ]
 
@@ -85,6 +99,9 @@ Requirements:
 - Prioritize recipes with high match percentages (70%+)
 - Include at least one recipe under 25 minutes
 - Make descriptions appetizing and specific
+- steps: 5-8 clear, numbered cooking steps with time estimates
+- Each step should be specific and actionable (e.g., "Heat oil over medium-high heat" not "Prepare ingredients")
+- estimatedTime is optional but helpful for longer steps
 
 Return ONLY the JSON array, no other text.`,
           },

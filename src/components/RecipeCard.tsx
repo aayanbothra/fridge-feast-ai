@@ -1,4 +1,4 @@
-import { Clock, ChefHat, CheckCircle2 } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Recipe } from '@/types/recipe';
 
@@ -31,6 +31,10 @@ const RecipeCard = ({ recipe, onSelect }: RecipeCardProps) => {
               <span className={difficultyColors[recipe.difficulty]}>
                 {recipe.difficulty}
               </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ListChecks className="w-4 h-4" />
+              <span>{recipe.steps?.length || 0} steps</span>
             </div>
           </div>
         </div>
@@ -84,7 +88,8 @@ const RecipeCard = ({ recipe, onSelect }: RecipeCardProps) => {
         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-medium"
         size="lg"
       >
-        See Substitutions
+        <ChefHat className="w-5 h-5 mr-2" />
+        Start Cooking
       </Button>
     </div>
   );
