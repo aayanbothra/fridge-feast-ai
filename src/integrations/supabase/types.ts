@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      saved_recipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredients_used: Json
+          is_favorite: boolean | null
+          recipe_data: Json
+          recipe_title: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredients_used: Json
+          is_favorite?: boolean | null
+          recipe_data: Json
+          recipe_title: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredients_used?: Json
+          is_favorite?: boolean | null
+          recipe_data?: Json
+          recipe_title?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

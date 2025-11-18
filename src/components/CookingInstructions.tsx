@@ -1,24 +1,28 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, ChefHat, Clock, ArrowLeft, Lightbulb } from 'lucide-react';
+import { CheckCircle2, Circle, ChefHat, Clock, ArrowLeft, Lightbulb, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CookingStep } from '@/types/recipe';
+import { CookingStep, Recipe, Ingredient } from '@/types/recipe';
+import { saveRecipe } from '@/services/database';
+import { useToast } from '@/hooks/use-toast';
 
 interface CookingInstructionsProps {
-  recipeName: string;
-  steps: CookingStep[];
-  totalTime: number;
+  recipe: Recipe;
+  ingredients: Ingredient[];
   onBack: () => void;
   onSeeSubstitutions: () => void;
 }
 
 const CookingInstructions = ({ 
-  recipeName, 
-  steps, 
-  totalTime, 
+  recipe,
+  ingredients,
   onBack,
   onSeeSubstitutions 
 }: CookingInstructionsProps) => {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+  
+  const { title: recipeName, steps, cookTime: totalTime } = recipe;
 
   // Safety check for missing steps
   if (!steps || steps.length === 0) {
@@ -57,6 +61,25 @@ const CookingInstructions = ({
 
   const resetAll = () => {
     setCompletedSteps(new Set());
+  };
+  
+  const handleSaveRecipe = async () => {
+    setIsSaving(true);
+    const savedRecipe = await saveRecipe(recipe, ingredients);
+    setIsSaving(false);
+    
+    if (savedRecipe) {
+      toast({
+        title: "Recipe saved!",
+        description: "You can access this recipe anytime from your saved list",
+      });
+    } else {
+      toast({
+        title: "Failed to save recipe",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const progress = (completedSteps.size / steps.length) * 100;
@@ -208,6 +231,24 @@ const CookingInstructions = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={handleSaveRecipe}
+            disabled={isSaving}
+            variant="outline"
+            className="flex-1 font-semibold py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          >
+            {isSaving ? (
+              <>
+                <Save className="w-5 h-5 mr-2 animate-pulse" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 mr-2" />
+                Save Recipe
+              </>
+            )}
+          </Button>
           <Button
             onClick={onSeeSubstitutions}
             className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
