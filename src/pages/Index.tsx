@@ -11,9 +11,10 @@ import FeatureHighlights from '@/components/FeatureHighlights';
 import ExampleRecipes from '@/components/ExampleRecipes';
 import SubstitutionShowcase from '@/components/SubstitutionShowcase';
 import SampleCTA from '@/components/SampleCTA';
-import { Ingredient, Recipe, Substitution } from '@/types/recipe';
+import { Ingredient, Recipe, Substitution, CuisineGroup } from '@/types/recipe';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, BookmarkCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateRecipes, generateSubstitutions } from '@/services/claude';
@@ -28,7 +29,7 @@ const Index = () => {
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
   const [isLoadingSubstitutions, setIsLoadingSubstitutions] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [cuisines, setCuisines] = useState<CuisineGroup[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
   const [savedRecipesCount, setSavedRecipesCount] = useState(0);
@@ -58,16 +59,21 @@ const Index = () => {
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
+  const handleAddIngredient = (ingredient: Ingredient) => {
+    setIngredients([...ingredients, ingredient]);
+  };
+
   const handleFindRecipes = async () => {
     setIsLoadingRecipes(true);
     setState('recipes');
     
     try {
-      const generatedRecipes = await generateRecipes(ingredients);
-      setRecipes(generatedRecipes);
+      const generatedCuisines = await generateRecipes(ingredients);
+      setCuisines(generatedCuisines);
+      const totalRecipes = generatedCuisines.reduce((sum, c) => sum + c.recipes.length, 0);
       toast({
         title: "Recipes ready!",
-        description: `Found ${generatedRecipes.length} delicious recipes for you`,
+        description: `Found ${totalRecipes} delicious recipes across ${generatedCuisines.length} cuisines`,
       });
     } catch (error) {
       console.error('Error generating recipes:', error);
@@ -89,9 +95,12 @@ const Index = () => {
 
   const handleRecipeUpdate = (updatedRecipe: Recipe) => {
     setSelectedRecipe(updatedRecipe);
-    // Also update in recipes list if needed
-    setRecipes(prevRecipes => 
-      prevRecipes.map(r => r.title === updatedRecipe.title ? updatedRecipe : r)
+    // Also update in cuisines list if needed
+    setCuisines(prevCuisines => 
+      prevCuisines.map(cuisine => ({
+        ...cuisine,
+        recipes: cuisine.recipes.map(r => r.title === updatedRecipe.title ? updatedRecipe : r)
+      }))
     );
   };
 
@@ -131,7 +140,7 @@ const Index = () => {
   const handleReset = () => {
     setState('upload');
     setIngredients([]);
-    setRecipes([]);
+    setCuisines([]);
     setSelectedRecipe(null);
     setSubstitutions([]);
   };
@@ -237,6 +246,7 @@ const Index = () => {
               <IngredientList
                 ingredients={ingredients}
                 onRemove={handleRemoveIngredient}
+                onAdd={handleAddIngredient}
               />
               <div className="flex justify-center animate-slide-up">
                 <Button
@@ -263,9 +273,16 @@ const Index = () => {
                   <p className="text-2xl font-bold text-foreground mb-2">
                     Finding perfect recipes for you...
                   </p>
-                  <p className="text-base text-muted-foreground">
+                  <p className="text-base text-muted-foreground mb-6">
                     Analyzing your ingredients with AI
                   </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setState('ingredients')}
+                    className="animate-pulse"
+                  >
+                    Cancel
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-10 animate-fade-in">
@@ -274,18 +291,42 @@ const Index = () => {
                       Your Perfect Matches
                     </h2>
                     <p className="text-lg text-muted-foreground">
-                      We found {recipes.length} delicious recipes you can make
+                      Explore {cuisines.length} cuisines with {cuisines.reduce((sum, c) => sum + c.recipes.length, 0)} delicious recipes
                     </p>
                   </div>
-                  <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {recipes.map((recipe, index) => (
-                      <RecipeCard
-                        key={index}
-                        recipe={recipe}
-                        onSelect={() => handleSelectRecipe(recipe)}
-                      />
+                  
+                  <Tabs defaultValue={cuisines[0]?.name} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-8">
+                      {cuisines.map((cuisine) => (
+                        <TabsTrigger 
+                          key={cuisine.name} 
+                          value={cuisine.name}
+                          className="text-base font-semibold"
+                        >
+                          {cuisine.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    
+                    {cuisines.map((cuisine) => (
+                      <TabsContent key={cuisine.name} value={cuisine.name} className="space-y-6">
+                        <div className="text-center">
+                          <p className="text-lg text-muted-foreground italic">
+                            {cuisine.description}
+                          </p>
+                        </div>
+                        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                          {cuisine.recipes.map((recipe, index) => (
+                            <RecipeCard
+                              key={index}
+                              recipe={recipe}
+                              onSelect={() => handleSelectRecipe(recipe)}
+                            />
+                          ))}
+                        </div>
+                      </TabsContent>
                     ))}
-                  </div>
+                  </Tabs>
                 </div>
               )}
             </>
@@ -321,9 +362,16 @@ const Index = () => {
                   <p className="text-2xl font-bold text-foreground mb-2">
                     Analyzing substitutions with flavor science...
                   </p>
-                  <p className="text-base text-muted-foreground">
+                  <p className="text-base text-muted-foreground mb-6">
                     Finding creative alternatives backed by chemistry
                   </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setState('cooking-instructions')}
+                    className="animate-pulse"
+                  >
+                    Cancel
+                  </Button>
                 </div>
               ) : (
                 <SubstitutionPanel

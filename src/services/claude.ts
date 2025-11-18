@@ -1,4 +1,4 @@
-import { Ingredient, Recipe, Substitution } from '@/types/recipe';
+import { Ingredient, Recipe, Substitution, CuisineGroup } from '@/types/recipe';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -22,7 +22,7 @@ export async function analyzeImage(base64Image: string): Promise<Ingredient[]> {
   return data.ingredients;
 }
 
-export async function generateRecipes(ingredients: Ingredient[]): Promise<Recipe[]> {
+export async function generateRecipes(ingredients: Ingredient[]): Promise<CuisineGroup[]> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-recipes`, {
     method: 'POST',
     headers: {
@@ -38,7 +38,7 @@ export async function generateRecipes(ingredients: Ingredient[]): Promise<Recipe
   }
 
   const data = await response.json();
-  return data.recipes;
+  return data.cuisines;
 }
 
 export async function generateSubstitutions(

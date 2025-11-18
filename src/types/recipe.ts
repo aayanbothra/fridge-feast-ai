@@ -19,6 +19,13 @@ export interface Recipe {
   matchPercentage: number;
   description: string;
   steps: CookingStep[];
+  cuisine?: string;
+}
+
+export interface CuisineGroup {
+  name: string;
+  description: string;
+  recipes: Recipe[];
 }
 
 export interface Substitution {

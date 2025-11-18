@@ -27,6 +27,13 @@ interface Recipe {
   matchPercentage: number;
   description: string;
   steps: CookingStep[];
+  cuisine?: string;
+}
+
+interface CuisineGroup {
+  name: string;
+  description: string;
+  recipes: Recipe[];
 }
 
 serve(async (req) => {
@@ -66,44 +73,51 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 3072,
+        max_tokens: 4096,
         messages: [
           {
             role: 'user',
             content: `I have these ingredients: ${ingredientList}
 
-Generate 3 creative recipe suggestions I can make. Return a JSON array with this exact structure:
+Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions. Return a JSON array with this exact structure:
 [
   {
-    "title": "Recipe Name",
-    "cookTime": 25,
-    "difficulty": "easy|medium|hard",
-    "ingredientsNeeded": ["ingredient1", "ingredient2", ...],
-    "ingredientsMatched": ["ingredient1", "ingredient2", ...],
-    "matchPercentage": 75,
-    "description": "A compelling 2-3 sentence description highlighting flavors and appeal",
-    "steps": [
+    "name": "Mediterranean",
+    "description": "Fresh, healthy dishes with olive oil and herbs",
+    "recipes": [
       {
-        "stepNumber": 1,
-        "instruction": "Clear, actionable instruction for this step",
-        "estimatedTime": "5 min"
+        "title": "Recipe Name",
+        "cookTime": 25,
+        "difficulty": "easy|medium|hard",
+        "ingredientsNeeded": ["ingredient1", "ingredient2", ...],
+        "ingredientsMatched": ["ingredient1", "ingredient2", ...],
+        "matchPercentage": 75,
+        "description": "A compelling 2-3 sentence description",
+        "cuisine": "Mediterranean",
+        "steps": [
+          {
+            "stepNumber": 1,
+            "instruction": "Clear, actionable instruction",
+            "estimatedTime": "5 min"
+          }
+        ]
       }
     ]
   }
 ]
 
 Requirements:
-- ingredientsNeeded: all ingredients required for the recipe
-- ingredientsMatched: only the ingredients from my list that are used (must be subset of ingredientsNeeded)
-- matchPercentage: (ingredientsMatched.length / ingredientsNeeded.length) * 100, rounded
-- Prioritize recipes with high match percentages (70%+)
-- Include at least one recipe under 25 minutes
+- Choose 3 distinct, diverse cuisines (e.g., Mediterranean, Asian, Mexican, Italian, Indian, American)
+- Each cuisine should have exactly 3 recipes
+- Each recipe should have 5-8 clear cooking steps
+- ingredientsMatched: only ingredients from my list that are used
+- matchPercentage: (ingredientsMatched.length / ingredientsNeeded.length) * 100
+- Prioritize recipes with high match percentages (60%+)
+- Vary difficulty and cook times across recipes
 - Make descriptions appetizing and specific
-- steps: 5-8 clear, numbered cooking steps with time estimates
-- Each step should be specific and actionable (e.g., "Heat oil over medium-high heat" not "Prepare ingredients")
-- estimatedTime is optional but helpful for longer steps
+- cuisine field should match the cuisine group name
 
-Return ONLY the JSON array, no other text.`,
+Return ONLY the JSON array of cuisine groups, no other text.`,
           },
         ],
       }),
@@ -133,10 +147,10 @@ Return ONLY the JSON array, no other text.`,
       );
     }
 
-    const recipes: Recipe[] = JSON.parse(jsonMatch[0]);
+    const cuisines: CuisineGroup[] = JSON.parse(jsonMatch[0]);
     
     return new Response(
-      JSON.stringify({ recipes }),
+      JSON.stringify({ cuisines }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
