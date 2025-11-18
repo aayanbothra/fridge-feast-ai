@@ -87,6 +87,14 @@ const Index = () => {
     setState('cooking-instructions');
   };
 
+  const handleRecipeUpdate = (updatedRecipe: Recipe) => {
+    setSelectedRecipe(updatedRecipe);
+    // Also update in recipes list if needed
+    setRecipes(prevRecipes => 
+      prevRecipes.map(r => r.title === updatedRecipe.title ? updatedRecipe : r)
+    );
+  };
+
   const handleStartSubstitutions = async () => {
     if (!selectedRecipe) return;
 
@@ -289,6 +297,7 @@ const Index = () => {
               ingredients={ingredients}
               onBack={() => setState('recipes')}
               onSeeSubstitutions={handleStartSubstitutions}
+              onRecipeUpdate={handleRecipeUpdate}
             />
           )}
 
