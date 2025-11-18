@@ -1,28 +1,33 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, ChefHat, Clock, ArrowLeft, Lightbulb, Save } from 'lucide-react';
+import { CheckCircle2, Circle, ChefHat, Clock, ArrowLeft, Lightbulb, Save, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CookingStep, Recipe, Ingredient } from '@/types/recipe';
 import { saveRecipe } from '@/services/database';
 import { useToast } from '@/hooks/use-toast';
+import RecipeChat from '@/components/RecipeChat';
 
 interface CookingInstructionsProps {
   recipe: Recipe;
   ingredients: Ingredient[];
   onBack: () => void;
   onSeeSubstitutions: () => void;
+  onRecipeUpdate?: (updatedRecipe: Recipe) => void;
 }
 
 const CookingInstructions = ({ 
   recipe,
   ingredients,
   onBack,
-  onSeeSubstitutions 
+  onSeeSubstitutions,
+  onRecipeUpdate 
 }: CookingInstructionsProps) => {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [currentRecipe, setCurrentRecipe] = useState<Recipe>(recipe);
   const { toast } = useToast();
   
-  const { title: recipeName, steps, cookTime: totalTime } = recipe;
+  const { title: recipeName, steps, cookTime: totalTime } = currentRecipe;
 
   // Safety check for missing steps
   if (!steps || steps.length === 0) {
@@ -65,7 +70,7 @@ const CookingInstructions = ({
   
   const handleSaveRecipe = async () => {
     setIsSaving(true);
-    const savedRecipe = await saveRecipe(recipe, ingredients);
+    const savedRecipe = await saveRecipe(currentRecipe, ingredients);
     setIsSaving(false);
     
     if (savedRecipe) {
@@ -80,6 +85,19 @@ const CookingInstructions = ({
         variant: "destructive",
       });
     }
+  };
+
+  const handleRecipeUpdate = (updates: Partial<Recipe>, explanation: string) => {
+    const updatedRecipe = { ...currentRecipe, ...updates };
+    setCurrentRecipe(updatedRecipe);
+    if (onRecipeUpdate) {
+      onRecipeUpdate(updatedRecipe);
+    }
+    
+    toast({
+      title: "Recipe updated!",
+      description: explanation,
+    });
   };
 
   const progress = (completedSteps.size / steps.length) * 100;
@@ -250,6 +268,14 @@ const CookingInstructions = ({
             )}
           </Button>
           <Button
+            onClick={() => setIsChatOpen(true)}
+            variant="default"
+            className="flex-1 bg-primary hover:bg-primary/90 font-semibold py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Chat with AI
+          </Button>
+          <Button
             onClick={onSeeSubstitutions}
             className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
           >
@@ -265,6 +291,16 @@ const CookingInstructions = ({
           </p>
         </div>
       </div>
+
+      {/* Chat Interface */}
+      {isChatOpen && (
+        <RecipeChat
+          recipe={currentRecipe}
+          ingredients={ingredients}
+          onClose={() => setIsChatOpen(false)}
+          onRecipeUpdate={handleRecipeUpdate}
+        />
+      )}
     </div>
   );
 };
