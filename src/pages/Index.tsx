@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import IngredientList from '@/components/IngredientList';
 import RecipeCard from '@/components/RecipeCard';
 import CookingInstructions from '@/components/CookingInstructions';
 import SubstitutionPanel from '@/components/SubstitutionPanel';
+import SavedRecipesPanel from '@/components/SavedRecipesPanel';
 import HeroSection from '@/components/HeroSection';
 import HowItWorks from '@/components/HowItWorks';
 import FeatureHighlights from '@/components/FeatureHighlights';
@@ -12,12 +13,14 @@ import SubstitutionShowcase from '@/components/SubstitutionShowcase';
 import SampleCTA from '@/components/SampleCTA';
 import { Ingredient, Recipe, Substitution } from '@/types/recipe';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, BookmarkCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateRecipes, generateSubstitutions } from '@/services/claude';
+import { getSavedRecipesCount } from '@/services/database';
 import logo from '@/assets/logo.png';
 
-type AppState = 'upload' | 'ingredients' | 'recipes' | 'cooking-instructions' | 'substitutions';
+type AppState = 'upload' | 'ingredients' | 'recipes' | 'cooking-instructions' | 'substitutions' | 'saved-recipes';
 
 const Index = () => {
   const [state, setState] = useState<AppState>('upload');
@@ -28,7 +31,17 @@ const Index = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const [savedRecipesCount, setSavedRecipesCount] = useState(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadSavedRecipesCount();
+  }, [state]);
+
+  const loadSavedRecipesCount = async () => {
+    const count = await getSavedRecipesCount();
+    setSavedRecipesCount(count);
+  };
 
   const handleImageAnalyzed = (detectedIngredients: Ingredient[]) => {
     setIngredients(detectedIngredients);
@@ -115,20 +128,44 @@ const Index = () => {
     setSubstitutions([]);
   };
 
+  const handleViewSavedRecipe = (recipe: Recipe, recipeIngredients: Ingredient[]) => {
+    setSelectedRecipe(recipe);
+    setIngredients(recipeIngredients);
+    setState('cooking-instructions');
+  };
+
   return (
     <div className="min-h-screen bg-background decorative-bg">
       {/* Header */}
       <header className="glass-card border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-center gap-3 group">
-            <img 
-              src={logo} 
-              alt="Recipe Remix" 
-              className="w-14 h-14 transition-transform group-hover:scale-110" 
-            />
-            <h1 className="text-2xl font-display font-semibold text-foreground">
-              Recipe Remix
-            </h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 group cursor-pointer" onClick={handleReset}>
+              <img 
+                src={logo} 
+                alt="Recipe Remix" 
+                className="w-14 h-14 transition-transform group-hover:scale-110" 
+              />
+              <h1 className="text-2xl font-display font-semibold text-foreground">
+                Recipe Remix
+              </h1>
+            </div>
+            
+            {state !== 'saved-recipes' && (
+              <Button
+                variant="ghost"
+                onClick={() => setState('saved-recipes')}
+                className="relative"
+              >
+                <BookmarkCheck className="w-5 h-5 mr-2" />
+                Saved Recipes
+                {savedRecipesCount > 0 && (
+                  <Badge variant="default" className="ml-2">
+                    {savedRecipesCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -248,11 +285,17 @@ const Index = () => {
 
           {state === 'cooking-instructions' && selectedRecipe && (
             <CookingInstructions
-              recipeName={selectedRecipe.title}
-              steps={selectedRecipe.steps}
-              totalTime={selectedRecipe.cookTime}
+              recipe={selectedRecipe}
+              ingredients={ingredients}
               onBack={() => setState('recipes')}
               onSeeSubstitutions={handleStartSubstitutions}
+            />
+          )}
+
+          {state === 'saved-recipes' && (
+            <SavedRecipesPanel
+              onBack={() => setState('upload')}
+              onViewRecipe={handleViewSavedRecipe}
             />
           )}
 
