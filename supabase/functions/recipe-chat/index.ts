@@ -10,22 +10,44 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let messages, currentRecipe, availableIngredients;
+  
   try {
-    const { messages, currentRecipe, availableIngredients } = await req.json();
+    const requestData = await req.json();
+    messages = requestData.messages;
+    currentRecipe = requestData.currentRecipe;
+    availableIngredients = requestData.availableIngredients;
+    
+    // Validate inputs
+    if (!currentRecipe || typeof currentRecipe !== 'object') {
+      throw new Error('Invalid or missing currentRecipe');
+    }
+    if (!Array.isArray(messages)) {
+      throw new Error('Invalid or missing messages array');
+    }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // Build safe ingredient lists
+    const ingredientsNeededList = Array.isArray(currentRecipe.ingredientsNeeded) 
+      ? currentRecipe.ingredientsNeeded.join(', ') 
+      : 'None specified';
+    
+    const availableIngredientsList = Array.isArray(availableIngredients) 
+      ? availableIngredients.map((i: any) => i.name).join(', ') 
+      : 'None specified';
+
     // Build context-aware system prompt
     const systemPrompt = `You are an expert cooking assistant helping users modify recipes in real-time. 
 
-Current Recipe: "${currentRecipe.title}"
-Cook Time: ${currentRecipe.cookTime} minutes
-Difficulty: ${currentRecipe.difficulty}
-Ingredients Needed: ${currentRecipe.ingredientsNeeded.join(', ')}
-Available Ingredients: ${availableIngredients.map((i: any) => i.name).join(', ')}
+Current Recipe: "${currentRecipe.title || 'Untitled Recipe'}"
+Cook Time: ${currentRecipe.cookTime || 'Not specified'} minutes
+Difficulty: ${currentRecipe.difficulty || 'Not specified'}
+Ingredients Needed: ${ingredientsNeededList}
+Available Ingredients: ${availableIngredientsList}
 
 Your role:
 - Help users when they're missing ingredients by suggesting substitutions
@@ -116,6 +138,11 @@ Keep responses conversational and helpful. Focus on practical cooking solutions.
     });
   } catch (error) {
     console.error('Recipe chat error:', error);
+    console.error('Request context:', JSON.stringify({ 
+      hasRecipe: !!currentRecipe, 
+      hasIngredients: !!availableIngredients,
+      messageCount: messages?.length 
+    }));
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
