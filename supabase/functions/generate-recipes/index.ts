@@ -79,7 +79,7 @@ serve(async (req) => {
             role: 'user',
             content: `I have these ingredients: ${ingredientList}
 
-Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions (9 total). Return ONLY valid JSON array with this EXACT structure:
+Generate 3 DIFFERENT cuisine styles, each with 2 recipe suggestions (6 total). Return ONLY valid JSON array with this EXACT structure:
 [
   {
     "name": "Mediterranean",
@@ -108,8 +108,8 @@ Generate 3 DIFFERENT cuisine styles, each with 3 recipe suggestions (9 total). R
 
 CRITICAL Requirements:
 - Choose 3 distinct cuisines (Mediterranean, Asian, Mexican or similar)
-- Each cuisine must have EXACTLY 3 recipes
-- Each recipe must have EXACTLY 4-6 cooking steps
+- Each cuisine must have EXACTLY 2 recipes
+- Each recipe must have EXACTLY 4-5 cooking steps
 - Keep descriptions under 100 characters
 - ingredientsMatched: only ingredients from my list
 - matchPercentage: round to nearest integer
@@ -146,7 +146,28 @@ Return ONLY the JSON array. NO markdown, NO explanations, ONLY the JSON array st
       );
     }
 
-    const cuisines: CuisineGroup[] = JSON.parse(jsonMatch[0]);
+    let cuisines: CuisineGroup[];
+    try {
+      cuisines = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Attempted to parse:', jsonMatch[0].substring(0, 500));
+      // Try to clean and re-parse
+      let cleaned = jsonMatch[0]
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, '')
+        .replace(/\t/g, ' ');
+      
+      try {
+        cuisines = JSON.parse(cleaned);
+      } catch (secondError) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in Claude response', details: String(parseError) }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
     
     return new Response(
       JSON.stringify({ cuisines }),
